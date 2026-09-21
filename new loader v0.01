@@ -1,0 +1,457 @@
+// Louis Client - Working Mods
+// Paste with Ctrl + Shift + J
+// Password: gojoiscool32
+
+(() => {
+    const KEY = 'gojoiscool32';
+    const STORAGE = 'louis_unlocked';
+    const alreadyUnlocked = sessionStorage.getItem(STORAGE) === '1';
+
+    const colors = {
+        bg: '#0f1117',
+        header: '#171b24',
+        border: '#4c1d95',
+        text: '#f3f3f3',
+        sub: '#9ca3af',
+        button: '#1d232c',
+        hover: '#293140'
+    };
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spitOut {
+            0% { opacity: 0; transform: scale(0.1) rotate(-160deg); filter: brightness(0); }
+            60% { opacity: 1; filter: brightness(1.3); }
+            100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes suckIn {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: scale(0) rotate(140deg); opacity: 0; filter: brightness(0); }
+        }
+        @keyframes holePulse {
+            0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%,-50%) scale(1.1); opacity: 0.9; }
+        }
+        .louis-hole {
+            position: fixed; top: 50%; left: 50%;
+            width: 80px; height: 80px; border-radius: 50%;
+            background: radial-gradient(circle, #000 40%, #4c1d95 75%, transparent 80%);
+            transform: translate(-50%, -50%); z-index: 999998;
+            animation: holePulse 1s ease-in-out infinite; pointer-events: none;
+        }
+    `;
+    document.head.appendChild(style);
+
+    function createButton(text) {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        Object.assign(btn.style, {
+            width: '100%', marginTop: '7px', padding: '10px',
+            background: colors.button, color: '#fff',
+            border: `1px solid ${colors.border}`, borderRadius: '5px',
+            cursor: 'pointer', fontSize: '12px', fontWeight: '600'
+        });
+        btn.onmouseenter = () => btn.style.background = colors.hover;
+        btn.onmouseleave = () => btn.style.background = colors.button;
+        return btn;
+    }
+
+    // ===== WORKING TOOL WINDOWS =====
+    function openToolWindow(title, buildContent) {
+        const win = document.createElement('div');
+        Object.assign(win.style, {
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%,-50%)', width: '420px',
+            background: colors.bg, border: `1px solid ${colors.border}`,
+            borderRadius: '10px', zIndex: '1000000',
+            fontFamily: 'Segoe UI, Arial, sans-serif', color: colors.text,
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)', overflow: 'hidden'
+        });
+
+        const head = document.createElement('div');
+        Object.assign(head.style, {
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '11px 16px', background: colors.header, cursor: 'move'
+        });
+        const t = document.createElement('div');
+        t.textContent = title;
+        t.style.fontWeight = '700';
+        t.style.color = colors.border;
+        t.style.fontSize = '13px';
+        const x = document.createElement('span');
+        x.textContent = '×';
+        x.style.cursor = 'pointer';
+        x.style.fontSize = '18px';
+        x.style.color = colors.sub;
+        x.onclick = () => win.remove();
+        head.append(t, x);
+
+        const body = document.createElement('div');
+        body.style.padding = '14px';
+        buildContent(body);
+
+        win.append(head, body);
+        document.body.appendChild(win);
+
+        // drag
+        let drag = false, ox = 0, oy = 0;
+        head.onmousedown = e => { drag = true; ox = e.clientX - win.offsetLeft; oy = e.clientY - win.offsetTop; };
+        document.addEventListener('mousemove', e => {
+            if (!drag) return;
+            win.style.left = (e.clientX - ox) + 'px';
+            win.style.top = (e.clientY - oy) + 'px';
+            win.style.transform = 'none';
+        });
+        document.addEventListener('mouseup', () => drag = false);
+    }
+
+    // Source Code Dumper
+    function openSourceDumper() {
+        openToolWindow('Source Code Dumper', body => {
+            const area = document.createElement('textarea');
+            Object.assign(area.style, {
+                width: '100%', height: '260px', background: '#0a0a0a', color: '#0f0',
+                border: `1px solid ${colors.border}`, borderRadius: '5px',
+                fontFamily: 'monospace', fontSize: '11px', padding: '10px',
+                boxSizing: 'border-box', resize: 'none'
+            });
+            area.readOnly = true;
+
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '8px';
+            row.style.marginBottom = '10px';
+
+            ['HTML', 'JS', 'CSS'].forEach(type => {
+                const b = createButton(type);
+                b.style.flex = '1';
+                b.style.marginTop = '0';
+                b.onclick = () => {
+                    if (type === 'HTML') area.value = document.documentElement.outerHTML;
+                    if (type === 'JS') {
+                        let out = '';
+                        document.querySelectorAll('script').forEach(s => out += (s.textContent || '') + '\n\n---\n\n');
+                        area.value = out || '(no inline scripts)';
+                    }
+                    if (type === 'CSS') {
+                        let out = '';
+                        document.querySelectorAll('style').forEach(s => out += s.textContent + '\n\n');
+                        area.value = out || '(no styles)';
+                    }
+                };
+                row.appendChild(b);
+            });
+
+            body.append(row, area);
+        });
+    }
+
+    // Script Executor
+    function openScriptExecutor() {
+        openToolWindow('Script Executor', body => {
+            const code = document.createElement('textarea');
+            Object.assign(code.style, {
+                width: '100%', height: '140px', background: '#0a0a0a', color: '#0f0',
+                border: `1px solid ${colors.border}`, borderRadius: '5px',
+                fontFamily: 'monospace', fontSize: '12px', padding: '10px',
+                boxSizing: 'border-box', marginBottom: '8px'
+            });
+            code.placeholder = '// write JS here';
+
+            const out = document.createElement('div');
+            Object.assign(out.style, {
+                width: '100%', height: '100px', background: '#0a0a0a', color: '#0f0',
+                border: `1px solid ${colors.border}`, borderRadius: '5px',
+                fontFamily: 'monospace', fontSize: '11px', padding: '8px',
+                overflowY: 'auto', boxSizing: 'border-box', marginTop: '8px'
+            });
+            out.textContent = '> ready';
+
+            const run = createButton('Execute');
+            run.onclick = () => {
+                try {
+                    const result = eval(code.value);
+                    out.textContent = '> ' + (result !== undefined ? String(result) : 'done');
+                } catch (e) {
+                    out.textContent = '! ' + e.message;
+                }
+            };
+
+            body.append(code, run, out);
+        });
+    }
+
+    // Web Proxy
+    function openWebProxy() {
+        const url = prompt('Enter URL to open through proxy:');
+        if (!url) return;
+        window.open('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), '_blank');
+    }
+
+    // RAT Detector (simple scan)
+    function openRatDetector() {
+        openToolWindow('RAT Detector', body => {
+            const log = document.createElement('div');
+            Object.assign(log.style, {
+                background: '#0a0a0a', border: `1px solid ${colors.border}`,
+                borderRadius: '5px', padding: '12px', fontSize: '11px',
+                fontFamily: 'monospace', color: colors.sub, maxHeight: '280px',
+                overflowY: 'auto', lineHeight: '1.5'
+            });
+            log.textContent = 'Click Scan to start...';
+
+            const btn = createButton('START SCAN');
+            btn.onclick = () => {
+                let msg = '=== SCAN RESULTS ===\n\n';
+                const scripts = document.querySelectorAll('script');
+                msg += `[Scripts] ${scripts.length} found\n`;
+                const iframes = document.querySelectorAll('iframe');
+                msg += `[Iframes] ${iframes.length} found\n`;
+                msg += `[Cookies] ${document.cookie.split(';').length} cookies\n`;
+                msg += `[LocalStorage] ${Object.keys(localStorage).length} keys\n\n`;
+                msg += Object.keys(localStorage).some(k => /token|key|pass|secret/i.test(k))
+                    ? '⚠️ Possible sensitive keys in LocalStorage\n'
+                    : '✓ No obvious sensitive keys\n';
+                msg += '\nScan complete.';
+                log.textContent = msg;
+                log.style.color = '#3fb950';
+            };
+
+            body.append(btn, log);
+        });
+    }
+
+    function openMenu() {
+        const menu = document.createElement('div');
+        menu.id = 'louis-menu';
+        Object.assign(menu.style, {
+            position: 'fixed', top: '80px', right: '25px', width: '250px',
+            background: colors.bg, border: `1px solid ${colors.border}`,
+            borderRadius: '10px', color: colors.text,
+            fontFamily: 'Segoe UI, Arial, sans-serif', zIndex: '999999',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.4)', overflow: 'hidden',
+            animation: 'spitOut 0.5s ease forwards'
+        });
+
+        const topBar = document.createElement('div');
+        Object.assign(topBar.style, { height: '3px', background: colors.border, width: '100%' });
+
+        const header = document.createElement('div');
+        Object.assign(header.style, {
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '11px 14px', background: colors.header, cursor: 'move', userSelect: 'none'
+        });
+        const title = document.createElement('div');
+        title.textContent = 'LOUIS CLIENT';
+        Object.assign(title.style, { fontWeight: '700', fontSize: '13px', color: colors.border, letterSpacing: '1px' });
+        const closeBtn = document.createElement('span');
+        closeBtn.textContent = '×';
+        Object.assign(closeBtn.style, { cursor: 'pointer', fontSize: '20px', color: colors.sub });
+        header.append(title, closeBtn);
+
+        const body = document.createElement('div');
+        body.style.padding = '10px 14px 16px';
+
+        let currentPage = 0;
+        const pages = [[], [], []];
+
+        // PAGE 0 - Google Mods (working)
+        function addToggle(name, fn) {
+            const row = document.createElement('label');
+            Object.assign(row.style, { display: 'flex', alignItems: 'center', margin: '8px 0', cursor: 'pointer', fontSize: '12px' });
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.style.marginRight = '9px';
+            cb.onchange = e => fn(e.target.checked);
+            row.append(cb, document.createTextNode(name));
+            pages[0].push(row);
+        }
+
+        addToggle('Force Dark Mode', on => {
+            document.documentElement.style.filter = on ? 'invert(1) hue-rotate(180deg)' : '';
+        });
+        addToggle('Remove Ads', on => {
+            document.querySelectorAll('[data-text-ad], .commercial-unit, .ads-ad, #tads, .uEierd, .Vu5Zdd').forEach(el => {
+                el.style.display = on ? 'none' : '';
+            });
+        });
+        addToggle('Wide Results', on => {
+            document.querySelectorAll('#center_col, #search, .main').forEach(el => {
+                el.style.maxWidth = on ? '100%' : '';
+            });
+        });
+        addToggle('Hide AI Overview', on => {
+            document.querySelectorAll('.AiOverview, [data-attrid="wa:/description"], .related-question-pair, .YzCcne').forEach(el => {
+                el.style.display = on ? 'none' : '';
+            });
+        });
+        addToggle('Hide Related', on => {
+            document.querySelectorAll('.related-question-pair, .Wt5Tfe').forEach(el => {
+                el.style.display = on ? 'none' : '';
+            });
+        });
+        addToggle('Compact Mode', on => {
+            document.querySelectorAll('.g, .tF2Cxc').forEach(el => {
+                el.style.marginBottom = on ? '5px' : '';
+            });
+        });
+
+        // PAGE 1 - Tools
+        [
+            { name: 'Source Code Dumper', action: openSourceDumper },
+            { name: 'Script Executor', action: openScriptExecutor },
+            { name: 'Web Proxy', action: openWebProxy },
+            { name: 'RAT Detector', action: openRatDetector }
+        ].forEach(t => {
+            const btn = createButton(t.name);
+            btn.onclick = t.action;
+            pages[1].push(btn);
+        });
+
+        // PAGE 2
+        [
+            { name: 'Remote Dumper', action: () => {
+                const url = prompt('URL to dump:');
+                if (!url) return;
+                openToolWindow('Remote Dumper', body => {
+                    const area = document.createElement('textarea');
+                    Object.assign(area.style, {
+                        width: '100%', height: '240px', background: '#0a0a0a', color: '#0f0',
+                        border: `1px solid ${colors.border}`, borderRadius: '5px',
+                        fontFamily: 'monospace', fontSize: '11px', padding: '10px', boxSizing: 'border-box'
+                    });
+                    area.value = 'Fetching...';
+                    body.appendChild(area);
+                    fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url))
+                        .then(r => r.text())
+                        .then(t => area.value = t)
+                        .catch(e => area.value = 'Error: ' + e.message);
+                });
+            }},
+            { name: 'Dark Mode Toggle', action: () => {
+                const isDark = document.documentElement.style.filter.includes('invert');
+                document.documentElement.style.filter = isDark ? '' : 'invert(1) hue-rotate(180deg)';
+            }}
+        ].forEach(t => {
+            const btn = createButton(t.name);
+            btn.onclick = t.action;
+            pages[2].push(btn);
+        });
+
+        // Nav
+        const nav = document.createElement('div');
+        Object.assign(nav.style, { display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', alignItems: 'center' });
+        const prev = document.createElement('button');
+        prev.textContent = '◀';
+        Object.assign(prev.style, { padding: '5px 10px', background: colors.button, color: colors.border, border: `1px solid ${colors.border}`, borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' });
+        const pageLabel = document.createElement('div');
+        pageLabel.textContent = '1 / 3';
+        Object.assign(pageLabel.style, { color: colors.border, fontWeight: 'bold', fontSize: '11px' });
+        const next = document.createElement('button');
+        next.textContent = '▶';
+        Object.assign(next.style, { padding: '5px 10px', background: colors.button, color: colors.border, border: `1px solid ${colors.border}`, borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' });
+        nav.append(prev, pageLabel, next);
+
+        const content = document.createElement('div');
+
+        function renderPage(p) {
+            currentPage = p;
+            while (content.firstChild) content.removeChild(content.firstChild);
+            pages[p].forEach(el => content.appendChild(el));
+            pageLabel.textContent = `${p + 1} / 3`;
+            prev.style.opacity = p === 0 ? '0.4' : '1';
+            next.style.opacity = p === 2 ? '0.4' : '1';
+        }
+        prev.onclick = () => { if (currentPage > 0) renderPage(currentPage - 1); };
+        next.onclick = () => { if (currentPage < 2) renderPage(currentPage + 1); };
+
+        body.append(nav, content);
+        renderPage(0);
+        menu.append(topBar, header, body);
+        document.body.appendChild(menu);
+
+        // Drag
+        let dragging = false, ox = 0, oy = 0;
+        header.onmousedown = e => { dragging = true; ox = e.clientX - menu.offsetLeft; oy = e.clientY - menu.offsetTop; menu.style.animation = 'none'; };
+        document.onmousemove = e => {
+            if (!dragging) return;
+            menu.style.left = (e.clientX - ox) + 'px';
+            menu.style.top = (e.clientY - oy) + 'px';
+            menu.style.right = 'auto';
+            menu.style.transform = 'none';
+        };
+        document.onmouseup = () => dragging = false;
+
+        // Close
+        closeBtn.onclick = () => {
+            const hole = document.createElement('div');
+            hole.className = 'louis-hole';
+            document.body.appendChild(hole);
+            menu.style.transition = 'all 0.4s ease';
+            menu.style.left = '50%';
+            menu.style.top = '50%';
+            menu.style.transform = 'translate(-50%,-50%)';
+            menu.style.animation = 'suckIn 0.4s forwards';
+            setTimeout(() => { menu.remove(); hole.remove(); }, 400);
+        };
+    }
+
+    if (alreadyUnlocked) {
+        const hole = document.createElement('div');
+        hole.className = 'louis-hole';
+        document.body.appendChild(hole);
+        setTimeout(() => { hole.remove(); openMenu(); }, 300);
+        return;
+    }
+
+    // Login
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, {
+        position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.9)',
+        zIndex: '999999', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'Segoe UI, Arial, sans-serif'
+    });
+    const box = document.createElement('div');
+    Object.assign(box.style, {
+        width: '340px', background: colors.bg, border: `1px solid ${colors.border}`,
+        borderRadius: '12px', padding: '24px', color: colors.text
+    });
+    const title = document.createElement('div');
+    title.textContent = 'LOUIS CLIENT';
+    Object.assign(title.style, { fontSize: '17px', fontWeight: '800', color: colors.border, textAlign: 'center', letterSpacing: '2px', marginBottom: '4px' });
+    const sub = document.createElement('div');
+    sub.textContent = 'Password: gojoiscool32';
+    Object.assign(sub.style, { fontSize: '11px', color: colors.sub, textAlign: 'center', marginBottom: '16px' });
+    const input = document.createElement('input');
+    input.type = 'password';
+    input.placeholder = 'gojoiscool32';
+    Object.assign(input.style, {
+        width: '100%', padding: '11px', background: '#0a0a0a',
+        border: `1px solid ${colors.border}`, borderRadius: '6px',
+        color: '#fff', outline: 'none', boxSizing: 'border-box', marginBottom: '10px'
+    });
+    const status = document.createElement('div');
+    status.textContent = 'Waiting...';
+    Object.assign(status.style, { fontSize: '11px', color: colors.sub, marginBottom: '12px' });
+    const btn = createButton('UNLOCK');
+    btn.style.marginTop = '0';
+    btn.onclick = () => {
+        if (input.value.trim() === KEY) {
+            status.textContent = 'Access granted';
+            status.style.color = '#3fb950';
+            sessionStorage.setItem(STORAGE, '1');
+            const hole = document.createElement('div');
+            hole.className = 'louis-hole';
+            document.body.appendChild(hole);
+            setTimeout(() => { overlay.remove(); hole.remove(); openMenu(); }, 350);
+        } else {
+            status.textContent = 'Invalid code';
+            status.style.color = '#f85149';
+            input.value = '';
+        }
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+    box.append(title, sub, input, status, btn);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+})();
